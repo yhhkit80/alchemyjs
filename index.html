@@ -9,7 +9,7 @@
 <div class="clearfix" style="width:100%;height: 100%;">
   <div id="alchemyBox" style="width:100%;height: 100%;">
     <canvas id="starCanvas" style="width:100%;height: 100%;"></canvas>
-    <div id="guard" class="peopleDetail">
+    <div id="guard" class="peopleDetail" style="display:none;">
       <button class="myButton">停止动画</button>
     </div>
     <div id="peopleDetail" class="peopleDetail"></div>
@@ -219,6 +219,7 @@
       edge.hideDetails();
     },
     afterLoad : function(){
+	  $('#guard').show();
       console.log('afterLoad');
     }
   };

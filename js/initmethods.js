@@ -315,7 +315,7 @@
       d3.select('#alchemy').select('svg').attr("alchInst",Alchemy.prototype.instances.length-1);
     // 动画暂停/开始
     var layoutPause;
-    $('.myButton').on('click', function (){
+    $('#guard .myButton').on('click', function (){
       layoutPause = !layoutPause;
       $(this).text(layoutPause ? '开始动画' : '停止动画');
       return layoutPause ? alchemy.force.stop() : alchemy.force.start();
