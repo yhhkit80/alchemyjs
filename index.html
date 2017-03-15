@@ -1,0 +1,363 @@
+<html>
+<head>
+<meta charset="UTF-8" />
+<link href="css/vendor.css" rel="stylesheet">
+<link href="css/alchemy.css" rel="stylesheet">
+<link href="css/style.css" rel="stylesheet" />
+</head>
+<body>
+<div class="clearfix" style="width:100%;height: 100%;">
+  <div id="alchemyBox" style="width:100%;height: 100%;">
+    <canvas id="starCanvas" style="width:100%;height: 100%;"></canvas>
+    <div id="guard" class="peopleDetail">
+      <button class="myButton">停止动画</button>
+    </div>
+    <div id="peopleDetail" class="peopleDetail"></div>
+    <div id="selectDetailBox" class="peopleDetail">
+      <div id="selectDetail"></div>
+    </div>
+    <div id="loanDetailBox" class="peopleDetail"></div>
+    <div class="alchemy" id="alchemy"></div>
+  </div>
+  <!-- <div style="float:left;">
+    <h4 style="margin:10px;">规则描述</h4>
+    <p style="margin:10px;"><button onclick="selectNears()" type="button" class="btn btn-primary">地址相近</button></p>
+    <p style="margin:10px;"><button onclick="selectLoan()" type="button" class="btn btn-primary">主贷人订单</button></p>
+    <p style="margin:10px;"><button onclick="selectAllPeople()" type="button" class="btn btn-primary">所有人</button></p>
+    <p style="margin:10px;"><button onclick="selectAllOrder()" type="button" class="btn btn-primary">所有订单</button></p>
+    <p style="margin:10px;"><button onclick="ShowOnlyOrderLoan()" type="button" class="btn btn-primary">仅显示订单主贷人</button></p>
+    <p style="margin:10px;"><button onclick="selectNears()" type="button" class="btn btn-primary">公司相近关连到订单</button></p>
+    
+  </div> -->
+</div>
+<script src="js/jquery.js"></script>
+<script src="js/vendor.js"></script>
+<script src="js/alchemy.js"></script>
+<script src="js/rulesFn.js"></script>
+<script src="js/starrysky.js"></script>
+<script src="js/initmethods.js"></script>
+<script type="text/javascript">
+	starrysky({boxid: 'starCanvas'});//星空背景图初始化
+	// 自定义配置
+	var selfConf = {
+	    nodeTypeName: 'label0',
+	    edgeTypeName: 'type',
+	    nodeProperties : {
+	      PhoneNum: '手机号码',
+	      Province: '省份代码',
+	      City: '城市代码',
+	      County: '地区/县代码',
+	      TownShip: '城乡代码',
+	      Village: '村庄/街道代码',
+	      LAT: '经度',
+	      LNG: '纬度',
+	      Confidence: 'GPS坐标可信度（0-100）',
+	      Standard: '规范化地址',
+	      CompanyName: '公司名',
+	      CertId: '证件号码',
+	      OrderId: '订单号码',
+	      cCertId: '证件号码',
+	      cName: '用户名',//以上为节点中的属性
+	    },
+	    edgeProperties : {
+	      LastCall: '最后一次通话时间',
+	      WeekCallTime: '有记录的最后一周总通话时长(分钟)',
+	      WeekCallCount: '有记录的最后一周总通话次数',
+	      MonthCallTime: '有记录的最后一月总通话时长(分钟)',
+	      MonthCallCount: '有记录的最后一月总通话次数',
+	      TotalCallTime: '有记录的总通话时长(分钟)',
+	      TotalCallCount: '有记录的总通话次数',
+	      LastSMS: '最后一次短信时间',
+	      WeekSMS: '有记录的最后一周短信条数',
+	      MonthSMS: '有记录的最后一月短信条数',
+	      TotalSMS: '有记录的最后半年短信条数',
+	      Similar: '近似度（0-100）',//以上为关系线中的属性
+	    },
+	    nodeConfTypes : {
+	        Mobile: '手机号码',
+	        Address: '地址',
+	        Company: '公司',
+	        Cert: '证件号码',
+	        Order: '订单信息',
+	        OrderContact: '订单联系人',//以上为节点类型对应名称
+	    },
+	    edgeConfTypes : {
+	        Communicate: '交流',
+	        Near: '地址相近',
+	        Colleague: '公司相近',
+	        Loan: '主贷人',
+	        Guarantee: '担保人',
+	        Spouse: '配偶',
+	        Friend: '朋友',
+	        Workmate: '同事',
+	        Relatives: '亲属',
+	        EContact: '紧急联系人',
+	        Contact: '联系人',
+	        MobilePhone: '手机',
+	        HomePhone: '家庭电话',
+	        WorkPhone: '办公电话',
+	        HomeAddress: '家庭地址',
+	        WorkAddress: '工作地址',
+	        Attestation: '证件相同'//以上为关系类型对应名称  
+	    },
+	    nodeConf : {
+	        Mobile: {field: 'PhoneNum', image: "css/images/icon/Mobile.png"},
+	        Address: {field: 'Province', image: "css/images/icon/Address.png"},
+	        Company: {field: 'CompanyName', image: "css/images/icon/Company.png"},
+	        Cert: {field: 'CertId', image: "css/images/icon/Card.png"},
+	        Order: {field: 'OrderId', image: "css/images/icon/Order.png"},
+	        OrderContact: {field: 'cName', image: "css/images/icon/Person.png"},//以上为节点类型对应属性的主键名称和图标，用于显示节点文字和图标
+	    },
+	    getAllTexts: function(){
+	      return $.extend({},this.nodeProperties,this.edgeProperties,this.nodeConfTypes,this.edgeConfTypes);
+	    },
+	    getObjKeys: function (obj){
+	      var arr = [];
+	      for(var p in obj){
+	        arr.push(p);
+	      }
+	      return arr;
+	    },
+	    riskRules: []
+	}
+	 //定义全局变量，方法中要用
+  var alchemy, alchemyData, textjson = {}, nodeTypes = {}, edgeTypes = {};
+	textjson = selfConf.getAllTexts();
+  nodeTypes[selfConf.nodeTypeName] = selfConf.getObjKeys(selfConf.nodeConfTypes);
+  edgeTypes[selfConf.edgeTypeName] = selfConf.getObjKeys(selfConf.edgeConfTypes);
+	// ajax请求规则
+  $.ajax({
+    url: 'data/rules.json',
+    contentType: 'application/json;charset=utf-8',
+    type: 'get',
+    async: false,
+    cache: false,
+    dataType: 'json',
+    success: function(data){
+      selfConf.riskRules = data.risk;
+      showLoanDetail(data); //显示主贷人信息
+    }
+  });
+	// ajax请求json数据
+  $.ajax({
+    url: 'data/jsonmore.json',
+    contentType: 'application/json;charset=utf-8',
+    type: 'get',
+    async: false,
+    cache: false,
+    dataType: 'json',
+    success: function(data){
+      if(data && data.nodes.length)
+        data.nodes[0].root = true;
+      alchemyData = data;
+    }
+  });
+  //alchemy配置
+  var config = {
+      //dataSource: 'data/jsonmore.json',//可以ajax提前获取定义变量，这里写变量名称
+    dataSource: alchemyData,
+    "nodeStyle": {
+      "all": {
+        "radius": function(d) {
+          var root = d.getProperties().root;
+          var label = d.getProperties()[selfConf.nodeTypeName];
+          return root? 20:(label == 'OrderContact' ? 15 : 10);
+        },
+      },
+    },
+    "edgeStyle": {
+      "all": {
+        "width": 2,
+        "color": "#eee",//线的默认颜色
+        "opacity": 0.5,
+      },
+    },
+    directedEdges: true,//线条带箭头
+    selfImage: true,//自定义节点显示图片设置,图片在自定义配置中
+    nodeTypes: nodeTypes,//配置node的类型
+    nodeCaption: function(node){
+      var p = selfConf.nodeTypeName;
+      return node.properties[selfConf.nodeConf[node[p]].field] || node.id;
+    },//节点显示的属性名称，search时也是用这个字段来搜索
+    edgeTypes: edgeTypes,
+    edgeCaption: function(edge){
+      var p = selfConf.edgeTypeName;
+      return textjson[edge[p]] || edge[p];
+    },//节点显示的属性名称，search时也是用这个字段来搜索
+    linkDistancefn: function(edge,k){
+      //edge.edgeType = edge.self.getProperties().type
+      return 50
+    },//关系线的距离 
+    alpha: 0,
+    backgroundColor: 'null',//设置透明背景
+    fixNodes: false,//所有子节点不能拉伸，默认false
+    fixRootNodes: false,//根节点不能拉伸 ，默认false
+    nodeCaptionsOnByDefault: false,//初始时是否显示节点文本，默认false
+    edgeCaptionsOnByDefault: false,//初始时是否显示edge文本，默认false，这个没起作用
+    nodeOverlap: 26,//节点重叠的最小判断距离 ，即在节点周围24的距离以外互斥，默认24
+    nodeRadius: 15,//节点半径 [int|string|function] default:10 已经被nodeStyle自定义样式覆盖
+    forceLocked: false,//默认为true，没有动画和动力感应效果，改为false才有
+    nodeFilters: false,
+    edgeFilters: false,
+    removeElement: true,//removeElement 这个方法没有找对应的函数，但是能打开面板
+    initialScale: 1,//指定的SVG变焦的初始距离,默认为1，即缩放比例
+    initialTranslate:[0,0],//初始节点位置，默认中心点为0 0
+    nodeClick: function(node){
+      node.showDetails('#selectDetailBox');//可以传入容器id或class，在该容器中显示节点的properties详情
+      node.showRelatedToPerson();//点击节点时显示相关联的节点和线，到人为止
+    },
+    nodeMouseOver: function (node){
+      node.showDetails();
+    },
+    nodeMouseOut: function (node){
+      node.hideDetails();
+    },
+    edgeMouseOver: function(edge){
+      edge.showDetails();
+    },
+    edgeMouseOut: function(edge){
+      edge.hideDetails();
+    },
+    afterLoad : function(){
+      console.log('afterLoad');
+    }
+  };
+  makeLayout(config); //初始化alchemy
+
+  // 显示主贷人详细信息的方法
+  function showLoanDetail(data){
+    var baseDom = '', mainLoanDom = '';
+    if(!data) return false;
+    if(data.base){
+      baseDom += '<p><span class="loan-name">' + data.base.name + '</span> ' +
+                 '<span class="loan-warns">' + data.base.warns + '</span> ' +
+                 '<span class="loan-score">(' + data.base.score + ')</span></p>';
+    }
+    if(data.mainLoan){
+      mainLoanDom +=  '<p>证件号码：' + data.mainLoan.certNo + '</p>' +
+                      '<p>性别：' + data.mainLoan.sex + '</p>' +
+                      '<p>年龄：' + data.mainLoan.age + '</p>' +
+                      '<p>出生日期：' + data.mainLoan.birth + '</p>' +
+                      '<p>婚姻状况：' + data.mainLoan.marital + '</p>';
+    }
+    $('#loanDetailBox').append(baseDom).append(mainLoanDom).show();
+  }
+
+  function selectNears(){
+    alchemy.clearAllClass();
+    alchemy.showAll();
+    var edges = d3.selectAll('.edge.Near').data();
+    edges.forEach(function(edge,i) {
+      edge.self.bigger().selected();
+      edge.source.self.bigger().selected();
+      edge.target.self.bigger().selected();
+      var sEdges = edge.source.self._adjacentEdges;
+      var tEdges = edge.target.self._adjacentEdges;
+      sEdges.forEach(function(sEdge){
+        if(sEdge._edgeType.indexOf('Address')!= -1){
+          var sNode = edge.source.id == sEdge._d3.source.id ? sEdge._d3.target.self : sEdge._d3.source.self;
+          sEdge.bigger().selected();
+          sNode.bigger().selected();
+        }
+      });
+      tEdges.forEach(function(tEdge){
+        if(tEdge._edgeType.indexOf('Address')!= -1){
+          var tNode = edge.target.id == tEdge._d3.source.id ? tEdge._d3.target.self : tEdge._d3.source.self;
+          tEdge.bigger().selected();
+          tNode.bigger().selected();
+        }
+      })
+    });
+  }
+  function selectLoan(){
+    alchemy.clearAllClass();
+    alchemy.showAll();
+    var edges = d3.selectAll('.edge.Loan').data();
+    edges.forEach(function(edge,i) {
+      edge.self.bigger().selected();
+      edge.source.self.bigger().selected();
+      edge.target.self.bigger().selected();
+    });
+  }
+  
+  function selectAllPeople(){
+    var nodes = d3.selectAll('.node.OrderContact').data();
+    for(var i in nodes){
+      var node = nodes[i];
+      node.self.selected();
+    }
+  }
+  
+  function selectAllOrder(){
+    var nodes = d3.selectAll('.node.Order').data();
+    for(var i in nodes){
+      var node = nodes[i];
+      node.self.selected();
+    }
+  }
+  
+  var allNodes = d3.selectAll('.node').data();
+  var allEdges = d3.selectAll('.edge').data();
+  
+  function ShowOnlyOrderLoan(){
+    var edges = d3.selectAll('.edge.Loan').data();
+    var njson = {};
+    var ejson = {};
+    for(var i in edges){
+      var edge = edges[i];
+      var eid = edge.self.id;
+      ejson[eid]=true;
+      var sid = edge.source.self.id;
+      njson[sid]=true;
+      var tid = edge.target.self.id;
+      njson[tid] = true;
+    }
+    for(var i in allNodes){
+      var node = allNodes[i];
+      var nodeSelf = node.self;
+      var id = nodeSelf.id;
+      if(njson[id]) nodeSelf.selected();
+      else nodeSelf.hidden();
+    }
+    for(var i in allEdges){
+      var edge = allEdges[i];
+      var edgeSelf = edge.self;
+      var id = edgeSelf.id;
+      if(ejson[id]) edgeSelf.selected();
+      else edgeSelf.hidden();
+    }
+  }
+  
+  function selectedFromJson(ejson,njson){
+    for(var i in allNodes){
+      var node = allNodes[i];
+      var nodeSelf = node.self;
+      var id = nodeSelf.id;
+      if(njson[id]) nodeSelf.selected();
+      //else nodeSelf.hidden();
+    }
+    for(var i in allEdges){
+      var edge = allEdges[i];
+      var edgeSelf = edge.self;
+      var id = edgeSelf.id;
+      if(ejson[id]) edgeSelf.selected();
+      //else edgeSelf.hidden();
+    }
+  }
+  
+  function companyClose(){
+    var edges = d3.selectAll('.edge.Colleague').data();
+    var json = {};
+    for(var i in edges){
+      var edge = edges[i];
+      var edgeSelf = edge.self;
+      edgeSelf.selected();
+      var mainId = edgeSelf.id;
+      var snode = edge.source.self._adjacentEdges;
+      var tnode = edge.source.self._adjacentEdges;
+    }
+  }
+  
+</script>
+</body>
+</html>

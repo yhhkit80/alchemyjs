@@ -1,0 +1,26 @@
+(
+    function (){
+      var JJS = Java.type("com.github.reston.servlet.JJS");
+      JJS.exec("/WEB-INF/RESTon/RESTon.jjs");
+      var neo4j = RESTon.neo4j();
+      var rootNodeResult = neo4j.query({
+        "statement" : "match (p:OrderContact{cCertId:{props}.cCertId}) return p",
+        "parameters" : {"props":{"cCertId":"215478185611034825"}},
+        "resultDataContents" : [ "graph" ],
+        "includeStats" : true
+      });
+//      print(rootNodeResult);
+      var rootNodeId = rootNodeResult.data[0].graph.nodes[0].id;
+      print("rootNodeId:"+rootNodeId);
+      var result = neo4j.query({
+        "statement" : "match (o:Order) where o.OrderId=888888 match p=(o)-[*]->() return p",
+        "parameters" : null,
+        "resultDataContents" : [ "graph" ],
+        "includeStats" : true
+      });
+      var formatResult = neo4j.formatJsonToShow(result,rootNodeId);
+//      print(formatResult);
+      print("result:"+JSON.stringify(formatResult));
+      return formatResult;
+    }
+    )();
