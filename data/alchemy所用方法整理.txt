@@ -1,0 +1,128 @@
+﻿alchemy所用方法整理：
+
+config注意点：
+自定义配置内容在selfConf中设置，包括：
+节点和关系线的类型属性名；
+所有属性、类型的中英文对照，分区块写；
+selfConf.nodeConf用于设置不同节点类型对应要显示的properties中的属性名，图片地址；
+保留两个方法。
+
+ //定义全局全变，方法中要用
+  var alchemy, alchemyData,  textjson = {}, nodeTypes = {}, edgeTypes = {};
+根据selfConf设置textjson,nodeTypes,edgeTypes三个变量的值，在config中要使用
+
+通过ajax同步请求数据，赋值给alchemyData，并将第一个节点设为根节点
+
+因要设置图片及其他效果，原始样式设置大部分在css中改写，config中nodeStyle中只设置all的radius根据节点类型返回大小；edgeStyle中只设置all的线条宽度、颜色 、透明度
+selfImage: true,//自定义节点是否显示图片设置，如果是false，按原始的圆点显示
+其余config的设置见页面中注释；
+makeLayout(config); //初始化alchemy
+
+
+
+d3方法，主要用来设置d3元素的class
+d3.select('#node-'+id)   d3获取节点，id为原始数据中的id,node
+d3.select('#edge-'+edge.id+'-'+edge._index)   d3获取线，edge.id为转换后的id，原始数据中的source+'-'+target，edge._index为具有相同的source和target中的第几个
+
+d3.selectAll('.node')   d3获取所有节点
+d3.selectAll('.edge')   d3获取所有关系线
+// d3的获取数据方法，在往节点和关系线添加方法时使用到；获取不同类型的节点和关系线时比较方便
+d3.selectAll('.node').data();  d3获取所有节点数据，在此数组中每个d3Node的self与alchemy的node相同，d3Node中没有原始的node数据中的分类，id为原始id，root为是否根节点，index为d3中的序号，radius为尺寸
+d3.selectAll('.edge').data(); d3获取所有关系线数据，在此数组中每个d3Edge的self与alchemy的edge相同
+ d3.selectAll('.node.OrderContact').data(); d3获取节点中所有类型为OrderContact的数据，数组中每个d3Node的self与alchemy的node相同
+ d3.selectAll('.edge.Loan').data(); d3获取关系线中所有类型为Loan的数据，数组中每个d3Edge的self与alchemy的edge相同
+
+
+alchemy方法：
+alchemy.getNodes(id1,id2,id3…);  //根据原始数据中node的ids获取该节点集合，返回值为数组
+alchemy.getNodes(id)[0];  //根据原始数据中node的id获取该节点，返回值为数组，加上[0]为对象
+
+alchemy.getEdges(source,target);  //根据原始数据中edge的source和target获取该关系线，方向严格，返回值为数组
+alchemy.getNodes(nodeId)[0];  //根据原始数据中node的id获取该节点所有相关的关系线集合，不论方向，返回值为数组，加上[0]为对象
+
+
+alchemy.get.nodes().all();  alchemy获取所有节点，具体：
+	_nodeType 为原始node数据中的laybel0的种类,
+	_d3   与d3Node相同，
+	_adjacentEdges   为该节点所有关系线集合,
+	getProperties()   获取该节点原始数据，
+	其余要用的为增加的方法
+alchemy.get.edges().all();  alchemy获取所有关系线，具体：
+	_edgeType为为原始的edge数据中的type名称，
+	_index为相同source和target集合中的索引，一个就是0，
+	getProperties()获取该关系线原始数据，
+	allNodesActive()获取该线对应的节点。
+	其余要用的为增加的方法。
+	_d3  为 d3Edge的数据，其中：
+			edgeType  为原始的edge数据中的type名称，
+			caption  为转译后的type中文名称，
+			id  为原始数据中的source+'-'+target, 
+			source和target  分别代表对应的d3Node
+
+alchemy.force.start();   动画开始
+alchemy.force.stop();  动画停止
+alchemy.clearEdgesClass();  清除所有关系线样式，不取消隐藏
+alchemy.clearNodesClass();  清除所有节点样式，不取消隐藏
+alchemy.clearAllClass();  清除所有节点和关系线样式，不取消隐藏
+alchemy.showNodes(); 取消所有节点的隐藏状态
+alchemy.showEdges(); 取消所有关系线的隐藏状态
+alchemy.showAll(); 取消所有节点和关系线的隐藏状态
+
+节点自带方法
+node._d3.fixed = false;  将选定节点解锁
+node._d3.fixed = true;  将节点锁定
+节点增加方法
+node.showRelatedToPerson(); 点击节点时显示相关联的节点和线，到人为止
+node.showDetails();  可以传入容器id或class，默认为右上角的窗口，容器中显示节点中properties所有内容
+node.hideDetails(); 关闭右上角容器的显示内容
+node.bigger();  节点放大
+node.resize(); 节点还原大小
+node.hidden(); 隐藏节点
+node.unHidden(); 取消节点隐藏
+node.highlighted();  节点高亮
+node.unHighlighted(); 取消节点高亮
+node.selected();  选择节点
+node.unSelected(); 取消节点选择
+node.clearClass(); 节点样式初始化
+node.toggleHidden(); 节点隐藏切换
+
+关系线增加方法
+edge.showDetails();  可以传入容器id或class，默认为右上角的窗口，容器中显示关系线中properties所有内容
+edge.bigger();  关系线放大
+edge.resize(); 关系线还原大小
+edge.hideDetails(); 关闭右上角容器的显示内容
+edge.hidden(); 隐藏关系线
+edge.unHidden(); 取消关系线隐藏
+edge.highlighted();  关系线高亮
+edge.unHighlighted(); 取消关系线高亮
+edge.selected();  选择关系线
+edge.unSelected(); 取消关系线选择
+edge.clearClass(); 关系线样式初始化
+edge.toggleHidden(); 关系线隐藏切换
+
+
+
+
+
+
+
+
+其他改写的地方说明：
+1. config中nodeMouseOver中参数是node，nodeMouseOut中参数是d3的数据，要取出node.self才是绑定的node节点，将node的鼠标移入和移出事件在加载后重新用jquery改写，都一样传node
+config中edge没有鼠标移入移出事件，用jquery改写后添加
+
+ 2. alchemy.js第1905行文字位置要减掉15，往前缩，dx = edgeLength / 2 -15; //默认的文字位置偏后
+
+ 3. alchemy.js第1148  1070中在直接引入对象时a无法正确获取，改成a = alchemy时可以使用，1024对应979 a = instance;
+找原因：
+使用ajax获取数据后再将数据给config的dataSource进行alchemy初始化时,svg的alchInst会变成-1,要改成跟直接请求json时一样的0才可以用，不知道为什么!!
+  //使用ajax获取数据后需手动设置svg的alchInst属性，（可能代指该alchemy实例的索引）值为Alchemy.prototype.instances.length-1
+  if(Alchemy.prototype.instances.length>0)
+    d3.select('svg').attr("alchInst",Alchemy.prototype.instances.length-1);
+
+
+ alchemy.js第1337行.theta(1.0)：顶点数如果过多，计算的时间就会加大（O(n log n)）。theta 就是为了限制这个计算而存在的，默认值为0.8。这个值越小，就能把计算限制得越紧。
+a.force = d3.layout.force().size([conf.graphWidth(), conf.graphHeight()]).theta(1.0)
+
+控制面板显示的条件：conf.removeElement 这个方法没有找对应的函数，但是能打开面板
+        return conf.showEditor || conf.captionToggle || conf.toggleRootNodes || conf.removeElement || conf.clusterControl || conf.nodeStats || conf.edgeStats || conf.edgeFilters || conf.nodeFilters || conf.edgesToggle || conf.nodesToggle || conf.search || conf.exportSVG;
